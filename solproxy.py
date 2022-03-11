@@ -3,11 +3,13 @@ import threading
 
 #lock = threading.Lock()
 thread_num=1
+host = 'origin.media.com:8080'
+#host = "192.168.111.101:8080"
 
 def request_ts(id):
 
-    conn = http.client.HTTPConnection("192.168.0.124:1935")
-    conn.request("GET", "/vod/mp4:sample.mp4/playlist.m3u8")
+    conn = http.client.HTTPConnection(host)
+    conn.request("GET", "/B120156699_EPI0001_02_t33.mp4/playlist.m3u8")
     res = conn.getresponse()
 
     m3u8 = res.read()
