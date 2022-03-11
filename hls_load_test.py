@@ -1,42 +1,54 @@
 import http.client
-from time import sleep
-#from urllib import response
+import threading
 
-conn = http.client.HTTPConnection("192.168.0.124:1935")
+#lock = threading.Lock()
+thread_num=3
 
-conn.request("GET", "/vod/mp4:sample.mp4/playlist.m3u8")
+def request_ts(id):
 
-res = conn.getresponse()
+    conn = http.client.HTTPConnection("192.168.0.124:1935")
 
-m3u8 = res.read()
-m3u8 = m3u8.decode('utf-8')
-m3u8=m3u8.split('\n')[-2]
+    conn.request("GET", "/vod/mp4:sample.mp4/playlist.m3u8")
 
-url = "/vod/mp4:sample.mp4/" + m3u8
+    res = conn.getresponse()
 
-conn.request('GET', url)
-res = conn.getresponse()
+    m3u8 = res.read()
+    m3u8 = m3u8.decode('utf-8')
+    m3u8=m3u8.split('\n')[-2]
 
-m3u8 = res.read()
-m3u8 = m3u8.decode('utf-8')
-m3u8=m3u8.split('\n')
 
-i=0
-ts=[]
-while True:
-   if m3u8[i][0] != '#':
-       ts.append("/vod/mp4:sample.mp4/" + m3u8[i])
-   if m3u8[i] == '#EXT-X-ENDLIST':
-       break
-   i+=1 
+    url = "/vod/mp4:sample.mp4/" + m3u8
 
-# let's try faster http library
-n=0
-while n<100:
-    for i in ts:
-        conn.request('GET', i )
-        res = conn.getresponse()
-        res.read()
-        #print(res.status)
-    n+=1    
+    conn.request('GET', url)
+    res = conn.getresponse()
+
+    m3u8 = res.read()
+    m3u8 = m3u8.decode('utf-8')
+    m3u8=m3u8.split('\n')
+
+
+    i=0
+    ts=[]
+    while True:
+        if m3u8[i][0] != '#':
+            ts.append("/vod/mp4:sample.mp4/" + m3u8[i])
+        if m3u8[i] == '#EXT-X-ENDLIST':
+            break
+        i+=1 
+
+
+    n=0
+    while n<100:
+        for i in ts:
+            conn.request('GET', i )
+            res = conn.getresponse()
+            res.read()
+            print( str(id) +' ' + str(res.status) + ' ' + i)
+        n+=1    
+
+
+
+for i in range(0,thread_num):
+    th = threading.Thread(target=request_ts, args=(i, ) )    
+    th.start()
 
