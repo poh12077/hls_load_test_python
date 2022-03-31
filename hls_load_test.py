@@ -1,64 +1,66 @@
 import http.client
 import threading
+import os
 
-#lock = threading.Lock()
-thread_num=1
+thread_num=2
+#host = "10.0.4.101:8080"
 host = "192.168.0.124:1935"
+concurrent_user=2
+base_url = "/vod/mp4:sample.mp4/"
+#base_url = "/B120156699_EPI0001_02_t33.mp4/"
+
 
 def request_ts(id):
+    body = None
+    headers = {"Host": "origin.media.com"}
 
-    conn = http.client.HTTPConnection("192.168.0.124:1935")
-    conn.request("GET", "/vod/mp4:sample.mp4/playlist.m3u8")
-    res = conn.getresponse()
-    
-    conn_list=[]
-    conn_list.append(http.client.HTTPConnection(host))
-    conn_list[0].request("GET", "/vod/mp4:sample.mp4/playlist.m3u8")
-    res2 = conn_list[0].getresponse()
-    res2.read()
+    # conn = http.client.HTTPConnection(host)
+    # conn.request("GET", base_url + "playlist.m3u8" , body, headers)
+    # res = conn.getresponse()
 
-    m3u8 = res.read()
+    conn=[]
+    res=[]
+    for i in range(0, concurrent_user):
+        conn.append( http.client.HTTPConnection(host) )
+        conn[i].request("GET", base_url + "playlist.m3u8" , body, headers)
+        res.append( conn[i].getresponse() )
+        if i==0:
+            m3u8 = res[i].read()
+        else:
+            res[i].read()
+
     m3u8 = m3u8.decode('utf-8')
     m3u8=m3u8.split('\n')[-2]
 
+    url = base_url + m3u8
 
-    url = "/vod/mp4:sample.mp4/" + m3u8
+    conn[0].request('GET', url, body, headers)
+    res[0] = conn[0].getresponse()
 
-    conn.request('GET', url)
-    res = conn.getresponse()
-
-    m3u8 = res.read()
+    m3u8 = res[0].read()
     m3u8 = m3u8.decode('utf-8')
     m3u8=m3u8.split('\n')
-
 
     i=0
     ts=[]
     while True:
         if m3u8[i][0] != '#':
-            ts.append("/vod/mp4:sample.mp4/" + m3u8[i])
+            ts.append(base_url + m3u8[i])
         if m3u8[i] == '#EXT-X-ENDLIST':
             break
         i+=1 
 
-
-    n=0
-    while n<100:
+    while True:
         for i in ts:
-            # conn.request('GET', i )
-            # res = conn.getresponse()
-            # res.read()
-
-            conn_list[0].request('GET', i )
-            res2 = conn_list[0].getresponse()
-            res2.read()
-
-            print( str(id) +' ' + str(res.status) + ' ' + i)
-        n+=1    
-
-
+            for j in range(0, concurrent_user):
+               # session_id = str(os.getpid()) + ' ' + str(j)
+                session_id = str( threading.get_ident() ) + ' ' + str(j)
+                headers = {"Host": "origin.media.com", "user-agent": session_id }
+                conn[j].request('GET', i, body, headers )
+                res[j] = conn[j].getresponse() 
+                res[j].read()
+                print( session_id +' ' + str(res[j].status) + ' ' + i)
 
 for i in range(0,thread_num):
     th = threading.Thread(target=request_ts, args=(i, ) )    
     th.start()
-
