@@ -3,12 +3,19 @@ import threading
 
 #lock = threading.Lock()
 thread_num=1
+host = "192.168.0.124:1935"
 
 def request_ts(id):
 
     conn = http.client.HTTPConnection("192.168.0.124:1935")
     conn.request("GET", "/vod/mp4:sample.mp4/playlist.m3u8")
     res = conn.getresponse()
+    
+    conn_list=[]
+    conn_list.append(http.client.HTTPConnection(host))
+    conn_list[0].request("GET", "/vod/mp4:sample.mp4/playlist.m3u8")
+    res2 = conn_list[0].getresponse()
+    res2.read()
 
     m3u8 = res.read()
     m3u8 = m3u8.decode('utf-8')
@@ -38,9 +45,14 @@ def request_ts(id):
     n=0
     while n<100:
         for i in ts:
-            conn.request('GET', i )
-            res = conn.getresponse()
-            res.read()
+            # conn.request('GET', i )
+            # res = conn.getresponse()
+            # res.read()
+
+            conn_list[0].request('GET', i )
+            res2 = conn_list[0].getresponse()
+            res2.read()
+
             print( str(id) +' ' + str(res.status) + ' ' + i)
         n+=1    
 

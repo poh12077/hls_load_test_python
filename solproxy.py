@@ -1,7 +1,7 @@
 import http.client
 import threading
 
-thread_num=2
+thread_num=1
 #host = 'origin.media.com:8080'
 #host = "10.0.4.101:8080"
 host = '192.168.111.101:8080'
@@ -50,10 +50,14 @@ def request_ts(id):
             # if session_id == session_max:
             #     session_id = 0
             print( str(id) +' ' + str(res.status) + ' ' + i)
+            break
+    
 
+# for i in range(0,thread_num):
+#     th = threading.Thread(target=request_ts, args=(i, ) )    
+#     th.start()
 
-
-for i in range(0,thread_num):
-    th = threading.Thread(target=request_ts, args=(i, ) )    
+while True:
+    th = threading.Thread(target=request_ts, args=(0, ) )    
     th.start()
-
+    th.join()
